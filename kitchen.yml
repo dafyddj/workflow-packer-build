@@ -1,0 +1,33 @@
+---
+driver:
+  name: vagrant
+  box_check_update: false
+  ssh:
+    insert_key: false
+<% if ENV.key?('TECHNEG_VAGRANT_PROVIDER') %>
+  provider: <%= ENV['TECHNEG_VAGRANT_PROVIDER'] %>
+<% else %>
+  provider: qemu
+<%   if ENV.key?('CI') %>
+  customize:
+    qemu_dir: /usr/local/share/qemu
+<%   end %>
+<% end %>
+
+provisioner:
+  name: dummy
+
+verifier:
+  name: shell
+
+platforms:
+  - name: tinycore_linux
+    driver:
+<% if ENV.key?('TECHNEG_VAGRANT_BOX') %>
+      box: <%= ENV['TECHNEG_VAGRANT_BOX'] %>
+<% else %>
+      box: techneg/tcl14-x64-nocm
+<% end %>
+
+suites:
+  - name: default

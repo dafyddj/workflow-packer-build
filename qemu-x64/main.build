@@ -1,0 +1,167 @@
+packer {
+  required_plugins {
+    qemu = {
+      source  = "github.com/hashicorp/qemu"
+      version = "~> 1"
+    }
+    vagrant = {
+      source  = "github.com/hashicorp/vagrant"
+      version = "~> 1"
+    }
+  }
+}
+
+variable "accelerator" {
+  type    = string
+  default = "hvf"
+}
+
+variable "box_dir" {
+  type    = string
+  default = "../box/qemu"
+}
+
+variable "cm" {
+  type    = string
+  default = "nocm"
+}
+
+variable "cm_version" {
+  type    = string
+  default = ""
+}
+
+variable "cpus" {
+  type    = string
+  default = "1"
+}
+
+variable "disable_breakpoint" {
+  type    = bool
+  default = true
+}
+
+variable "disk_size" {
+  type    = string
+  default = "512"
+}
+
+variable "headless" {
+  type    = bool
+  default = true
+}
+
+variable "iso_dir" {
+  type    = string
+  default = "../iso"
+}
+
+variable "iso_url" {
+  type    = string
+  default = "https://example.com/tkl.iso"
+}
+
+variable "memory" {
+  type    = string
+  default = "512"
+}
+
+variable "no_release" {
+  type    = bool
+  default = false
+}
+
+variable "output_dir" {
+  type    = string
+  default = "../vms/qemu"
+}
+
+variable "prefix" {
+  type    = string
+  default = "test-"
+}
+
+variable "root_dir" {
+  type    = string
+  default = ".."
+}
+
+variable "shutdown_command" {
+  type    = string
+  default = "exitcheck.sh shutdown"
+}
+
+variable "ssh_password" {
+  type    = string
+  default = "Vagrant1"
+}
+
+variable "ssh_username" {
+  type    = string
+  default = "root"
+}
+
+variable "version" {
+  type    = string
+  default = "0.0.1pre"
+}
+
+locals {
+  boot_tcl14 = [
+    ["corepure64<enter><wait20>",                      "Run 'corepure64'"],
+    ["tce-load -wi tc-install<enter><wait40>",                 "Download and install 'tc-install'"],
+    ["sudo tc-install.sh<enter><wait1>",                       "Run 'tc-install.sh'"],
+    ["c<enter><wait1>f<enter><wait1>1<enter><wait1>2<enter><wait1>y<enter><wait1>",                "Install to HDD 'vda'"],
+    ["<enter>",                       "Don't install any extensions"],
+    ["3<enter>",                "Choose 'ext4'"],
+    ["vga=normal syslog showapps waitusb=5 tce=vda1<enter>",                       "Set boot options"],
+    ["y<enter><wait20><enter>",                      "Perform install"],
+    ["sudo reboot<enter><wait20>", "Reboot into new install"],
+    ["tce-load -wi openssh<enter><wait20>", "Install 'openssh'"],
+    ["tce-load -wi bash<enter><wait20>", "Install 'bash'"],
+    ["sudo -s<enter><wait1>", "Enter root shell"],
+    ["passwd<enter><wait1>", "Change root password"],
+    ["${var.ssh_password}<enter><wait2>",    "Enter password"],
+    ["${var.ssh_password}<enter><wait2>",    "Enter password again"],
+    ["cp /usr/local/etc/ssh/sshd_config.orig /usr/local/etc/ssh/sshd_config<enter><wait1>", "Copy 'sshd_config' template"],
+    ["sed -Ei 's/^#.*PermitRootLogin.*$/PermitRootLogin yes/' /usr/local/etc/ssh/sshd_config<enter><wait1>", "Allow SSH root login"],
+    ["sed -Ei 's/^$/filetool.sh -b/' /opt/shutdown.sh<enter><wait1>", "Backup files on shutdown (use exitcheck.sh to shutdown/reboot)"],
+    ["echo usr/local/etc/ssh >> /opt/.filetool.lst<enter><wait1>", "Make config persistent"],
+    ["echo etc/group >> /opt/.filetool.lst<enter><wait1>", "Make config persistent"],
+    ["echo etc/passwd >> /opt/.filetool.lst<enter><wait1>", "Make config persistent"],
+    ["echo etc/shadow >> /opt/.filetool.lst<enter><wait1>", "Make config persistent"],
+    ["echo '/usr/local/etc/init.d/openssh start' >> /opt/bootlocal.sh<enter><wait1>", "Start SSH on startup"],
+    ["/usr/local/etc/init.d/openssh start<enter>", "Start SSH so Packer can continue"],
+  ]
+}
+
+source "qemu" "boot" {
+  accelerator              = var.accelerator
+  boot_wait                = "5s"
+  cpus                     = var.cpus
+  disk_size                = var.disk_size
+  headless                 = var.headless
+  memory                   = var.memory
+  output_directory         = var.output_dir
+  shutdown_command         = var.shutdown_command
+  ssh_password             = var.ssh_password
+  ssh_timeout              = "10000s"
+  ssh_username             = var.ssh_username
+  use_default_display      = true
+  vm_name                  = source.name
+}
+
+build {
+  name = "build"
+
+  source "qemu.boot" {
+    boot_steps    = local.boot_tcl14
+    iso_checksum  = "f455f4188d2b2e35b87d3b61466b9dea8f3be057606729325749e9d37711b11e"
+    iso_urls      = [
+      "${var.root_dir}/iso/CorePure64-14.0.iso",
+      "${var.iso_dir}/CorePure64-14.0.iso",
+      var.iso_url,
+      "http://www.tinycorelinux.net/14.x/x86_64/release/CorePure64-14.0.iso"
+    ]
+    name          = "tcl14"
+  }

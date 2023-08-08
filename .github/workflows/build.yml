@@ -1,0 +1,84 @@
+name: Build boxes
+
+on:
+  - workflow_call
+
+jobs:
+  gov:
+    name: Get OS versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      os-versions: ${{ steps.get-os-versions.outputs.os-versions }}
+    steps:
+      - uses: actions/checkout@v3
+      - id: get-os-versions
+        run: |
+          VERSIONS=$(jq -cR 'split(" ")' os_vers)
+          OUTPUT="os-versions=$VERSIONS"
+          echo "Setting '$OUTPUT'"
+          echo "$OUTPUT" >> $GITHUB_OUTPUT
+  gbt:
+    name: Get build types
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      build-types: ${{ steps.get-build-types.outputs.build-types }}
+    steps:
+      - uses: actions/checkout@v3
+      - id: get-build-types
+        run: |
+          BUILDS=$(jq -cR 'split(" ")' builds)
+          OUTPUT="build-types=$BUILDS"
+          echo "Setting '$OUTPUT'"
+          echo "$OUTPUT" >> $GITHUB_OUTPUT
+  run-packer:
+    name: Build & test box
+    runs-on: macos-12
+    timeout-minutes: 30
+    needs: [gov, gbt]
+    env:
+      MAKE_VARS: ~
+    strategy:
+      fail-fast: false
+      matrix:
+        build: ${{ fromJSON(needs.gbt.outputs.build-types) }}
+        version: ${{ fromJSON(needs.gov.outputs.os-versions) }}
+    steps:
+      - name: Prepare environment
+        run: |
+          brew update
+          brew install make
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Run Packer
+        id: packer
+        env:
+          PACKER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gmake ${{ env.MAKE_VARS }} -f ${{ matrix.build }}/Makefile ${{ matrix.version }}
+      - name: Prepare Vagrant
+        if: matrix.build != 'vbox'
+        run: vagrant plugin install vagrant-qemu
+      - name: Install Test Kitchen
+        run: |
+          sudo echo "Refresh sudo cached credential"
+          brew install chef-workstation
+      - name: Prepare Test Kitchen
+        if: matrix.build == 'vbox'
+        run: echo TECHNEG_VAGRANT_PROVIDER=virtualbox >> $GITHUB_ENV
+      - name: Run Test Kitchen
+        continue-on-error: ${{ endsWith(github.repository, 'tinycore_linux') }}
+        env:
+          TECHNEG_VAGRANT_BOX: ${{ steps.packer.outputs.vagrant-box }}
+        run: kitchen test
+      - name: Upload to Vagrant Cloud
+        env:
+          VAGRANT_CLOUD_TOKEN: ${{ secrets.VAGRANT_CLOUD_TOKEN }}
+        run: |
+          packer build -timestamp-ui -var version=$(bin/version) -var prefix= -var no_release=false -var box_dir=box/${{ matrix.build }} upload
+      - if: ${{ failure() }}
+        run: brew install tmux
+      - if: ${{ failure() }}
+        uses: dafyddj/action-sshd-cloudflared@master
+

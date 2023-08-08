@@ -1,0 +1,50 @@
+name: Test & release `build.yml` workflow
+
+on:
+  - pull_request
+  - push
+  - workflow_dispatch
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pre-commit:
+    name: Run `pre-commit`
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+    - uses: pre-commit/action@v3.0.0
+  run-workflow:
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+  release:
+    name: Release
+    needs:
+      - pre-commit
+      - run-workflow
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run `semantic-release`
+        uses: codfish/semantic-release-action@v2
+        id: sem-rel
+        with:
+          branches: |
+            ["main"]
+          plugins: |
+            [ "@semantic-release/commit-analyzer",
+              "@semantic-release/release-notes-generator",
+              "@semantic-release/github"
+            ]
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Update branch for major version
+        if: steps.sem-rel.outputs.new-release-published == 'true'
+        run: git push
+             https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+             HEAD:refs/heads/v${{steps.sem-rel.outputs.release-major}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
