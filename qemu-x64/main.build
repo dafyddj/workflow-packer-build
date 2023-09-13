@@ -43,7 +43,7 @@ variable "disable_breakpoint" {
 
 variable "disk_size" {
   type    = string
-  default = "512"
+  default = "1024"
 }
 
 variable "headless" {
@@ -54,6 +54,11 @@ variable "headless" {
 variable "iso_dir" {
   type    = string
   default = "../iso"
+}
+
+variable "iso_name" {
+  type    = string
+  default = "alpine-installed-v0.6.qcow2"
 }
 
 variable "iso_url" {
@@ -88,12 +93,12 @@ variable "root_dir" {
 
 variable "shutdown_command" {
   type    = string
-  default = "exitcheck.sh shutdown"
+  default = "poweroff"
 }
 
 variable "ssh_password" {
   type    = string
-  default = "Vagrant1"
+  default = "vagrant"
 }
 
 variable "ssh_username" {
@@ -107,42 +112,23 @@ variable "version" {
 }
 
 locals {
-  boot_tcl14 = [
-    ["corepure64<enter><wait20>",                      "Run 'corepure64'"],
-    ["tce-load -wi tc-install<enter><wait40>",                 "Download and install 'tc-install'"],
-    ["sudo tc-install.sh<enter><wait1>",                       "Run 'tc-install.sh'"],
-    ["c<enter><wait1>f<enter><wait1>1<enter><wait1>2<enter><wait1>y<enter><wait1>",                "Install to HDD 'vda'"],
-    ["<enter>",                       "Don't install any extensions"],
-    ["3<enter>",                "Choose 'ext4'"],
-    ["vga=normal syslog showapps waitusb=5 tce=vda1<enter>",                       "Set boot options"],
-    ["y<enter><wait20><enter>",                      "Perform install"],
-    ["sudo reboot<enter><wait20>", "Reboot into new install"],
-    ["tce-load -wi openssh<enter><wait20>", "Install 'openssh'"],
-    ["tce-load -wi bash<enter><wait20>", "Install 'bash'"],
-    ["sudo -s<enter><wait1>", "Enter root shell"],
-    ["passwd<enter><wait1>", "Change root password"],
-    ["${var.ssh_password}<enter><wait2>",    "Enter password"],
-    ["${var.ssh_password}<enter><wait2>",    "Enter password again"],
-    ["cp /usr/local/etc/ssh/sshd_config.orig /usr/local/etc/ssh/sshd_config<enter><wait1>", "Copy 'sshd_config' template"],
-    ["sed -Ei 's/^#.*PermitRootLogin.*$/PermitRootLogin yes/' /usr/local/etc/ssh/sshd_config<enter><wait1>", "Allow SSH root login"],
-    ["sed -Ei 's/^$/filetool.sh -b/' /opt/shutdown.sh<enter><wait1>", "Backup files on shutdown (use exitcheck.sh to shutdown/reboot)"],
-    ["echo usr/local/etc/ssh >> /opt/.filetool.lst<enter><wait1>", "Make config persistent"],
-    ["echo etc/group >> /opt/.filetool.lst<enter><wait1>", "Make config persistent"],
-    ["echo etc/passwd >> /opt/.filetool.lst<enter><wait1>", "Make config persistent"],
-    ["echo etc/shadow >> /opt/.filetool.lst<enter><wait1>", "Make config persistent"],
-    ["echo '/usr/local/etc/init.d/openssh start' >> /opt/bootlocal.sh<enter><wait1>", "Start SSH on startup"],
-    ["/usr/local/etc/init.d/openssh start<enter>", "Start SSH so Packer can continue"],
+  qemu_args = [
+    ["-device", "virtio-net,netdev=user.0"],
+    ["-device", "virtio-rng-pci"],
   ]
 }
 
 source "qemu" "boot" {
   accelerator              = var.accelerator
-  boot_wait                = "5s"
+  boot_wait                = "-1s"
   cpus                     = var.cpus
+  disk_image               = true
+  disk_interface           = "ide"
   disk_size                = var.disk_size
   headless                 = var.headless
   memory                   = var.memory
   output_directory         = var.output_dir
+  qemuargs                 = local.qemu_args
   shutdown_command         = var.shutdown_command
   ssh_password             = var.ssh_password
   ssh_timeout              = "10000s"
@@ -155,13 +141,12 @@ build {
   name = "build"
 
   source "qemu.boot" {
-    boot_steps    = local.boot_tcl14
-    iso_checksum  = "f455f4188d2b2e35b87d3b61466b9dea8f3be057606729325749e9d37711b11e"
+    iso_checksum  = "d6034a1fd80bb5cadc4e3136b6c2d90cb2bc96da8982bdc499b8d53cdca552dc"
     iso_urls      = [
-      "${var.root_dir}/iso/CorePure64-14.0.iso",
-      "${var.iso_dir}/CorePure64-14.0.iso",
+      "${var.root_dir}/iso/${var.iso_name}",
+      "${var.iso_dir}/${var.iso_name}",
       var.iso_url,
-      "http://www.tinycorelinux.net/14.x/x86_64/release/CorePure64-14.0.iso"
+      "https://www.dropbox.com/scl/fi/iikkahq3srgr54krsnby2/alpine-installed-v0.6.qcow2?rlkey=w5112g2uh63da3rbduxbmyvmw&dl=1"
     ]
-    name          = "tcl14"
+    name          = "alpine318"
   }

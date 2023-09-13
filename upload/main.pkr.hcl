@@ -46,7 +46,7 @@ build {
   name = "upload"
 
   source "null.upload" {
-    name    = "tcl14"
+    name    = "alpine318"
   }
 
   post-processors {
