@@ -21,7 +21,7 @@ verifier:
   name: shell
 
 platforms:
-  - name: tinycore_linux
+  - name: alpine_linux
     driver:
 <% if ENV.key?('TECHNEG_VAGRANT_BOX') %>
       box: <%= ENV['TECHNEG_VAGRANT_BOX'] %>
