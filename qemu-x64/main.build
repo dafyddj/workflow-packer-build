@@ -21,16 +21,6 @@ variable "box_dir" {
   default = "../box/qemu"
 }
 
-variable "cm" {
-  type    = string
-  default = "nocm"
-}
-
-variable "cm_version" {
-  type    = string
-  default = ""
-}
-
 variable "cpus" {
   type    = string
   default = "1"
@@ -39,11 +29,6 @@ variable "cpus" {
 variable "disable_breakpoint" {
   type    = bool
   default = true
-}
-
-variable "disk_size" {
-  type    = string
-  default = "1024"
 }
 
 variable "headless" {
@@ -63,17 +48,7 @@ variable "iso_name" {
 
 variable "iso_url" {
   type    = string
-  default = "https://example.com/tkl.iso"
-}
-
-variable "memory" {
-  type    = string
-  default = "512"
-}
-
-variable "no_release" {
-  type    = bool
-  default = false
+  default = "https://www.dropbox.com/scl/fi/iikkahq3srgr54krsnby2/alpine-installed-v0.6.qcow2?rlkey=w5112g2uh63da3rbduxbmyvmw&dl=1"
 }
 
 variable "output_dir" {
@@ -81,29 +56,9 @@ variable "output_dir" {
   default = "../vms/qemu"
 }
 
-variable "prefix" {
-  type    = string
-  default = "test-"
-}
-
 variable "root_dir" {
   type    = string
   default = ".."
-}
-
-variable "shutdown_command" {
-  type    = string
-  default = "poweroff"
-}
-
-variable "ssh_password" {
-  type    = string
-  default = "vagrant"
-}
-
-variable "ssh_username" {
-  type    = string
-  default = "root"
 }
 
 variable "version" {
@@ -111,28 +66,19 @@ variable "version" {
   default = "0.0.1pre"
 }
 
-locals {
-  qemu_args = [
-    ["-device", "virtio-net,netdev=user.0"],
-    ["-device", "virtio-rng-pci"],
-  ]
-}
-
 source "qemu" "boot" {
   accelerator              = var.accelerator
   boot_wait                = "-1s"
   cpus                     = var.cpus
   disk_image               = true
-  disk_interface           = "ide"
-  disk_size                = var.disk_size
+  disk_size                = "1024"
   headless                 = var.headless
-  memory                   = var.memory
+  memory                   = "512"
   output_directory         = var.output_dir
-  qemuargs                 = local.qemu_args
-  shutdown_command         = var.shutdown_command
-  ssh_password             = var.ssh_password
+  shutdown_command         = "poweroff"
+  ssh_password             = "vagrant"
   ssh_timeout              = "10000s"
-  ssh_username             = var.ssh_username
+  ssh_username             = "root"
   use_default_display      = true
   vm_name                  = source.name
 }
@@ -146,7 +92,6 @@ build {
       "${var.root_dir}/iso/${var.iso_name}",
       "${var.iso_dir}/${var.iso_name}",
       var.iso_url,
-      "https://www.dropbox.com/scl/fi/iikkahq3srgr54krsnby2/alpine-installed-v0.6.qcow2?rlkey=w5112g2uh63da3rbduxbmyvmw&dl=1"
     ]
     name          = "alpine318"
   }
