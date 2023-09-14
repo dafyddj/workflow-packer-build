@@ -73,6 +73,7 @@ jobs:
           TECHNEG_VAGRANT_BOX: ${{ steps.packer.outputs.vagrant-box }}
         run: kitchen test
       - name: Upload to Vagrant Cloud
+        if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         env:
           VAGRANT_CLOUD_TOKEN: ${{ secrets.VAGRANT_CLOUD_TOKEN }}
         run: |
