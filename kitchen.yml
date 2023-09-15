@@ -1,18 +1,6 @@
 ---
 driver:
-  name: vagrant
-  box_check_update: false
-  ssh:
-    insert_key: false
-<% if ENV.key?('TECHNEG_VAGRANT_PROVIDER') %>
-  provider: <%= ENV['TECHNEG_VAGRANT_PROVIDER'] %>
-<% else %>
-  provider: qemu
-<%   if ENV.key?('CI') %>
-  customize:
-    qemu_dir: /usr/local/share/qemu
-<%   end %>
-<% end %>
+  name: dummy
 
 provisioner:
   name: dummy
@@ -21,13 +9,7 @@ verifier:
   name: shell
 
 platforms:
-  - name: alpine_linux
-    driver:
-<% if ENV.key?('TECHNEG_VAGRANT_BOX') %>
-      box: <%= ENV['TECHNEG_VAGRANT_BOX'] %>
-<% else %>
-      box: techneg/alpine318-x64-nocm
-<% end %>
+  - name: dummy
 
 suites:
   - name: default
