@@ -1,7 +1,11 @@
 name: Build boxes
 
 on:
-  - workflow_call
+  workflow_call:
+    inputs:
+      build-runner:
+        type: string
+        default: macos-12
 
 jobs:
   gov:
@@ -34,7 +38,7 @@ jobs:
           echo "$OUTPUT" >> $GITHUB_OUTPUT
   run-packer:
     name: Build & test box
-    runs-on: macos-12
+    runs-on: ${{ inputs.build-runner }}
     timeout-minutes: 30
     needs: [gov, gbt]
     env:
