@@ -20,6 +20,8 @@ jobs:
   run-workflow:
     uses: ./.github/workflows/build.yml
     secrets: inherit
+    with:
+      build-runner: buildjet-2vcpu-ubuntu-2204
   release:
     name: Release
     needs:
