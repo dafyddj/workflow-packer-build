@@ -56,8 +56,15 @@ jobs:
           detached: true
       - name: Prepare environment
         run: |
-          brew update
-          brew install make
+          kernel_name=$(uname -s)
+          if [ "$kernel_name" == "Linux" ]; then
+            sudo apt update
+            sudo apt --yes install qemu-system-x86 vagrant
+            echo PKR_VAR_accelerator=kvm >> $GITHUB_ENV
+          elif [ "$kernel_name" == "Darwin" ]; then
+            brew update
+            brew install make
+          fi
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Run Packer
@@ -71,8 +78,17 @@ jobs:
         run: vagrant plugin install vagrant-qemu
       - name: Install Test Kitchen
         run: |
-          sudo echo "Refresh sudo cached credential"
-          brew install chef-workstation
+          echo ::group::Installing Chef Workstation
+          kernel_name=$(uname -s)
+          if [ "$kernel_name" == "Linux" ]; then
+            wget --no-verbose https://packages.chef.io/files/stable/chef-workstation/23.7.1042/ubuntu/22.04/chef-workstation_23.7.1042-1_amd64.deb
+            sudo dpkg --install chef-workstation_23.7.1042-1_amd64.deb
+          elif [ "$kernel_name" == "Darwin" ]; then
+            sudo echo "Refresh sudo cached credential"
+            brew install chef-workstation
+          fi
+          echo ::endgroup::
+          chef -v
       - name: Prepare Test Kitchen
         if: matrix.build == 'vbox'
         run: echo TECHNEG_VAGRANT_PROVIDER=virtualbox >> $GITHUB_ENV
