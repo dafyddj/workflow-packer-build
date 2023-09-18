@@ -103,7 +103,3 @@ jobs:
           VAGRANT_CLOUD_TOKEN: ${{ secrets.VAGRANT_CLOUD_TOKEN }}
         run: |
           packer build -timestamp-ui -var version=$(bin/version) -var prefix= -var no_release=false -var box_dir=box/${{ matrix.build }} upload
-      - name: Debug on failure (When re-run with "Enable debug logging" checked)
-        if: runner.debug && failure()
-        uses: mxschmitt/action-tmate@v3
-
