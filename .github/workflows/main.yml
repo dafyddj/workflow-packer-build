@@ -20,6 +20,12 @@ jobs:
   run-workflow:
     uses: ./.github/workflows/build.yml
     secrets: inherit
+    strategy:
+      fail-fast: false
+      matrix:
+        build-runner: [buildjet-2vcpu-ubuntu-2204, macos-12]
+    with:
+      build-runner: ${{ matrix.build-runner }}
   release:
     name: Release
     needs:
