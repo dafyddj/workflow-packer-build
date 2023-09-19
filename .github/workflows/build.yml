@@ -49,24 +49,26 @@ jobs:
         build: ${{ fromJSON(needs.gbt.outputs.build-types) }}
         version: ${{ fromJSON(needs.gov.outputs.os-versions) }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
       - name: Debug on runner (When re-run with "Enable debug logging" checked)
         if: runner.debug
         uses: mxschmitt/action-tmate@v3
         with:
           detached: true
       - name: Prepare environment
+        env:
+          TECHNEG_VAGRANT_PROVIDER: ${{ startsWith(matrix.build, 'qemu') && 'qemu-system-x86' || 'virtualbox' }}
         run: |
           kernel_name=$(uname -s)
           if [ "$kernel_name" == "Linux" ]; then
             sudo apt update
-            sudo apt --yes install qemu-system-x86 vagrant
+            sudo apt --yes install vagrant $TECHNEG_VAGRANT_PROVIDER
             echo PKR_VAR_accelerator=kvm >> $GITHUB_ENV
           elif [ "$kernel_name" == "Darwin" ]; then
             brew update
             brew install make
           fi
-      - name: Checkout repository
-        uses: actions/checkout@v3
       - name: Run Packer
         id: packer
         env:
@@ -74,7 +76,7 @@ jobs:
         run: |
           gmake ${{ env.MAKE_VARS }} -f ${{ matrix.build }}/Makefile ${{ matrix.version }}
       - name: Prepare Vagrant
-        if: matrix.build != 'vbox'
+        if: startsWith(matrix.build, 'qemu')
         run: vagrant plugin install vagrant-qemu
       - name: Install Test Kitchen
         run: |
@@ -90,7 +92,7 @@ jobs:
           echo ::endgroup::
           chef -v
       - name: Prepare Test Kitchen
-        if: matrix.build == 'vbox'
+        if: startsWith(matrix.build, 'vbox')
         run: echo TECHNEG_VAGRANT_PROVIDER=virtualbox >> $GITHUB_ENV
       - name: Run Test Kitchen
         continue-on-error: ${{ endsWith(github.repository, 'tinycore_linux') }}

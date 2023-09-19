@@ -14,7 +14,7 @@ auto_version := $(shell $(_ROOT)/bin/version)
 VERSION ?= $(auto_version)
 _module_pvars :=  -var version=$(VERSION)
 
-$(_module_name)_output := $(_ROOT)/box/vbox
+$(_module_name)_output := $(_ROOT)/box/vbox-x64
 
 include $(_ROOT)/post.mk
 
@@ -22,7 +22,7 @@ stages := $(shell cat $(_ROOT)/stages)
 stages := $(filter-out install, $(stages))
 stages := $(addprefix $(_ROOT)/, $(addsuffix /main.provision, $(stages)))
 
-$(_ROOT)/vbox/main.cat.pkr.hcl: $(_ROOT)/vbox/main.build $(stages)
+$(_ROOT)/vbox-x64/main.cat.pkr.hcl: $(_ROOT)/vbox-x64/main.build $(stages)
 	$(info Making $@)
 	@cat $^ > $@
 	@echo } >> $@
