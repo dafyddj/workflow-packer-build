@@ -28,6 +28,7 @@ jobs:
         build-runner: [macos-12]
     with:
       build-runner: ${{ matrix.build-runner }}
+      upload-box: false
   release:
     name: Release
     needs:
