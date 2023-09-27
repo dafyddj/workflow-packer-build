@@ -6,6 +6,9 @@ on:
       build-runner:
         type: string
         default: macos-12
+      upload-box:
+        type: boolean
+        default: true
 
 jobs:
   gov:
@@ -102,6 +105,7 @@ jobs:
       - name: Upload to Vagrant Cloud (On GitHub default branch only)
         if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         env:
+          PACKER_COMMAND: ${{ inputs.upload-box && 'build -timestamp-ui' || 'validate' }}
           VAGRANT_CLOUD_TOKEN: ${{ secrets.VAGRANT_CLOUD_TOKEN }}
         run: |
-          packer build -timestamp-ui -var version=$(bin/version) -var prefix= -var no_release=false -var box_dir=box/${{ matrix.build }} upload
+          packer $PACKER_COMMAND -var version=$(bin/version) -var prefix= -var no_release=false -var box_dir=box/${{ matrix.build }} upload
