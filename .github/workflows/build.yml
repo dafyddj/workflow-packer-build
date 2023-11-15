@@ -54,11 +54,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-      - name: Debug on runner (When re-run with "Enable debug logging" checked)
-        if: runner.debug
-        uses: mxschmitt/action-tmate@v3
-        with:
-          detached: true
+      - name: Debug on runner
+        uses: dafyddj/action-sshd-cloudflared@master
       - name: Prepare environment
         env:
           TECHNEG_VAGRANT_PROVIDER: ${{ startsWith(matrix.build, 'qemu') && 'qemu-system-x86' || 'virtualbox' }}
