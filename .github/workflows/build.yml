@@ -54,6 +54,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+      - run: brew install tmux
       - name: Debug on runner
         uses: dafyddj/action-sshd-cloudflared@master
       - name: Prepare environment
