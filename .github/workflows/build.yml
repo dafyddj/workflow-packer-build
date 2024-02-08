@@ -59,18 +59,25 @@ jobs:
         uses: mxschmitt/action-tmate@v3
         with:
           detached: true
-      - name: Prepare environment
+      - name: Install virtualisation software
         env:
           TECHNEG_VAGRANT_PROVIDER: ${{ startsWith(matrix.build, 'qemu') && 'qemu-system-x86' || 'virtualbox' }}
+        if: ${{ !startsWith(runner.name, 'self') }}
         run: |
           kernel_name=$(uname -s)
           if [ "$kernel_name" == "Linux" ]; then
             sudo apt update
             sudo apt --yes install vagrant $TECHNEG_VAGRANT_PROVIDER
-            echo PKR_VAR_accelerator=kvm >> $GITHUB_ENV
           elif [ "$kernel_name" == "Darwin" ]; then
             brew update
             brew install make
+          fi
+      - name: Prepare environment
+        if: startsWith(matrix.build, 'qemu')
+        run: |
+          kernel_name=$(uname -s)
+          if [ "$kernel_name" == "Linux" ]; then
+            echo PKR_VAR_accelerator=kvm >> $GITHUB_ENV
           fi
       - name: Run Packer
         id: packer
@@ -82,6 +89,7 @@ jobs:
         if: startsWith(matrix.build, 'qemu')
         run: vagrant plugin install vagrant-qemu
       - name: Install Test Kitchen
+        if: ${{ !startsWith(runner.name, 'self') }}
         run: |
           echo ::group::Installing Chef Workstation
           kernel_name=$(uname -s)
