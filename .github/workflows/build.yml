@@ -93,4 +93,4 @@ jobs:
           PACKER_COMMAND: ${{ inputs.upload-box && 'build -timestamp-ui' || 'validate' }}
           VAGRANT_CLOUD_TOKEN: ${{ secrets.VAGRANT_CLOUD_TOKEN }}
         run: |
-          packer $PACKER_COMMAND -var version=$(bin/version) -var prefix= -var no_release=false -var box_dir=box/${{ inputs.build-type }} upload
+          packer $PACKER_COMMAND -only \*.${{ inputs.build-os-version }} -var version=$(bin/version) -var prefix= -var no_release=false -var box_dir=box/${{ inputs.build-type }} upload
